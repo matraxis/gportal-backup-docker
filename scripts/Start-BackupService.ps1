@@ -126,6 +126,7 @@ Backup-GameFiles calls the various worker functions to download, zip, and rotate
 Function Backup-GameFiles([string]$gameName, [string]$connectionString, [string]$remoteFolder)
 {
   Write-Output "============ Starting backup for $gameName ============"
+  
   Get-FilesFromFtpServer $gameName $connectionString $remoteFolder
   New-Archive $gameName
   Copy-ArchiveToBackup $gameName
