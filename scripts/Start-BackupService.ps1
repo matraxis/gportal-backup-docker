@@ -9,7 +9,9 @@ $logLocation = '/app/logs'
 
 # To ensure consistency, we're creating variables for each game name
 $gameName_7DTD = '7DTD'
-
+$gameName_ARK_SE = 'Ark_SE'
+$gameName_ICARUS = 'Icarus'
+$gameName_Valheim = 'Valheim'
 
 # ================= FUNCTIONS =================
 
@@ -63,7 +65,6 @@ Function Get-FilesFromFtpServer([string]$gameName, [string]$connectionString, [s
   Switch ($gameName)
   {
     "$gameName_7DTD" { $optionalSwitches = '--reject-regex=\/Mods\/' }
-    Default {Throw "Unknown game name passed to Get-FilesFromFtpServer"}
   } # Switch ($gameName)
 
   Write-Output "Getting files from ftp"
@@ -148,7 +149,6 @@ $logFileName = "BackupService_Log_$((Get-Date).tostring("yyyy-MM-dd_HHmmss")).lo
 $logFilePath = Join-Path $logLocation $logFileName
 Start-Transcript -path $logFilePath -append
 
-# If ([Environment]::GetEnvironmentVariable("GAME_$gameName_7DTD")) { Backup-Gamefiles "$gameName_7DTD" "$([Environment]::GetEnvironmentVariable("GAME_$gameName_7DTD"))" "/saves/" }
 $games = (Get-Item -path Env:\GAME_*)
 if ($games.Count -eq 0) 
 {
@@ -162,7 +162,11 @@ Foreach ($game in $games)
   $connectionString = ($game).Value
   Switch ($name)
   {
+    # Please keep these in alphabetical order, it'll make it easier to update
     "GAME_$gameName_7DTD" { Backup-Gamefiles "$gameName_7DTD" "$connectionString" "/saves/" }
+    "GAME_$gameName_ARK_SE" { Backup-Gamefiles "$gameName_ARK_SE" "$connectionString" "/ShooterGame/Saved/" }
+    "GAME_$gameName_ICARUS" { Backup-Gamefiles "$gameName_ICARUS" "$connectionString" "/Icarus/Config/" }
+    "GAME_$gameName_VALHEIM" { Backup-Gamefiles "$gameName_VALHEIM" "$connectionString" "/save/" }
     Default
     {
       Write-Error "The variable name $name is not recognized. If you believe this is in error, please open an issue on our GitHub page: https://github.com/DiceNinjaGaming/gportal-backup-docker"

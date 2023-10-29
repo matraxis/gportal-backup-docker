@@ -22,3 +22,4 @@ None of these variables have a default value, they must be explicitly set
 | Name Description |
 | ---------------- | ----------- |
 | GAME_7DTD | 7 Days to Die |
+| GAME_ARK_SE | Ark: Survival Evolved |
