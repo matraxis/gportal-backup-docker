@@ -1,0 +1,19 @@
+# This Docker Compose file as written is for local testing. It will be updated properly when app is released.
+version: "3"
+name: gportal-backup
+
+# volumes:
+#   app:
+services: 
+  gportal-backup: 
+    image: diceninjagaming/gportal-backup:latest
+    container_name: gportal-backup
+    volumes: 
+      # - app:/app
+      # - /mnt/backups/gportal:/app/backups
+      - ~/gportal:/app
+    env_file: .env
+    environment:
+      TZ: "America/New_York"
+    restart: unless-stopped
+    stop_grace_period: 2m

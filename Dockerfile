@@ -16,7 +16,8 @@ RUN apt-get install --no-install-recommends --no-install-suggests -y \
      ca-certificates cron curl lib32gcc-s1 locales p7zip-full powershell zip 
 
 # Ensure cron is enabled.
-RUN cron start
+# RUN cron start
+RUN touch /var/log/cron.log
     
 # Set up folders
 WORKDIR /app

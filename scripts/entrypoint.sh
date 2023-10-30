@@ -15,7 +15,7 @@ term_handler() {
 trap 'term_handler' SIGTERM SIGINT
 
 # Start the PowerShell script
-pwsh -File "/scripts/Setup-Service.ps1" &
+pwsh -File "/scripts/Setup-Service.ps1"
 
 # Sleep loop to keep the script running
 while true; do
@@ -23,7 +23,8 @@ while true; do
   # Make sure cron is running
   if ! pgrep -x "cron" > /dev/null
   then
-    cron start
+    echo "Starting cron"
+    cron -L 15
   fi
   
   sleep 5000 &

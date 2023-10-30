@@ -3,17 +3,18 @@
 This script contains all the logic needed to get the game files, archive them, and then move them to the backup location.
 #>
 
-$backupRoot = '/app/backups'
-$workingRoot = '/app/working'
-$logLocation = '/app/logs'
-
-# To ensure consistency, we're creating variables for each game name
-$gameName_7DTD = '7DTD'
-$gameName_ARK_SE = 'Ark_SE'
-$gameName_ICARUS = 'Icarus'
-$gameName_Valheim = 'Valheim'
+# Importing classes from the module hasn't worked, so we import them separately
+Get-ChildItem -Path /scripts/classes -Filter *.ps1 | ForEach-Object { . $_.FullName }
+Import-Module /scripts/helpers
 
 # ================= FUNCTIONS =================
+
+Function Set-Config
+{
+  $config = Read-Configs
+
+  $env:BACKUPS_MAX_COUNT = $config["BACKUPS_MAX_COUNT"]
+} # Function Set-Config
 
 <#
 .Description
@@ -21,7 +22,7 @@ Parses the game name onto the working folder
 #>
 Function Get-WorkingFolder([string]$gameName)
 {
-  Return (Join-Path $workingRoot $gameName)
+  Return (Join-Path $Global:workingRoot $gameName)
 } # function Get-WorkingFolder
 
 <#
@@ -30,7 +31,7 @@ Parses the game name onto the working folder
 #>
 Function Get-BackupFolder([string]$gameName)
 {
-  Return (Join-Path $backupRoot $gameName)
+  Return (Join-Path $Global:backupRoot $gameName)
 } # function Get-WorkingFolder
 
 <#
@@ -51,8 +52,12 @@ Function Remove-WorkingFolder([string]$gameName)
 .Description
 Uses wget to download the files from the ftp server into the working directory
 #>
-Function Get-FilesFromFtpServer([string]$gameName, [string]$connectionString, [string]$remoteFolder)
+Function Get-FilesFromFtpServer($game)
 {
+  $gameName = $game.Name
+  $connectionString = $game.ConnectionString
+  $remoteFolder = $game.RemoteFolder
+
   $workingFolder = (Get-WorkingFolder $gameName)
   
   Remove-WorkingFolder $gameName
@@ -64,7 +69,7 @@ Function Get-FilesFromFtpServer([string]$gameName, [string]$connectionString, [s
   $optionalSwitches = ''
   Switch ($gameName)
   {
-    "$gameName_7DTD" { $optionalSwitches = '--reject-regex=\/Mods\/' }
+    "7DTD" { $optionalSwitches = '--reject-regex=\/Mods\/' }
   } # Switch ($gameName)
 
   Write-Output "Getting files from ftp"
@@ -114,9 +119,11 @@ Function Resize-Backups([string]$gameName)
   If ($env:BACKUPS_MAX_COUNT -GT 0)
   {
     $backupFolder = Get-BackupFolder $gameName
-    Write-Output $backupFolder
-    Write-Output "Pruning backups (if necessary) for $gameName to keep only the last $env:BACKUPS_MAX_COUNT"
+    Write-Output "Pruning backups (if necessary) for $gameName to keep only the latest $env:BACKUPS_MAX_COUNT"
     Get-ChildItem $backupFolder | Sort-Object CreationTime -desc | Select-Object -Skip $env:BACKUPS_MAX_COUNT | Remove-Item -Force -Verbose
+  }
+  else {
+    Write-Output "Keeping all backups"
   }
 } # Function Resize-Backups
 
@@ -124,19 +131,19 @@ Function Resize-Backups([string]$gameName)
 .Description
 Backup-GameFiles calls the various worker functions to download, zip, and rotate backups for each game server
 #>
-Function Backup-GameFiles([string]$gameName, [string]$connectionString, [string]$remoteFolder)
+Function Backup-GameFiles($game)
 {
-  Write-Output "============ Starting backup for $gameName ============"
+  Write-Output "============ Starting backup for $($game.Name) ============"
   
-  Get-FilesFromFtpServer $gameName $connectionString $remoteFolder
-  New-Archive $gameName
-  Copy-ArchiveToBackup $gameName
-  Resize-Backups $gameName
+  Get-FilesFromFtpServer $game
+  New-Archive $game.Name
+  Copy-ArchiveToBackup $game.Name
+  Resize-Backups $game.Name
 
   Write-Output "Performing cleanup"
-  Remove-WorkingFolder $gameName
+  Remove-WorkingFolder $game.Name
 
-  Write-Output "============ Backup completed for $gameName ============"
+  Write-Output "============ Backup completed for $($game.Name) ============"
 
 } # function Backup-GameFiles
 
@@ -146,32 +153,23 @@ $ErrorActionPreference="SilentlyContinue"
 Stop-Transcript | out-null
 $ErrorActionPreference = "Continue"
 $logFileName = "BackupService_Log_$((Get-Date).tostring("yyyy-MM-dd_HHmmss")).log"
-$logFilePath = Join-Path $logLocation $logFileName
+$logFilePath = Join-Path $Global:logLocation $logFileName
 Start-Transcript -path $logFilePath -append
 
-$games = (Get-Item -path Env:\GAME_*)
-if ($games.Count -eq 0) 
-{
-  Write-Error "No game environment variables found. Please make sure you specify at least one variable that starts with GAME_"
-  Exit 1
-} # if ($games.Count -eq 0) 
+$games = Get-GamesToBackup
 
-Foreach ($game in $games)
+if ($games.Count -gt 0)
 {
-  $name = ($game).Name
-  $connectionString = ($game).Value
-  Switch ($name)
+  # The count is always off by 1 when reading in the file
+  Write-Output "Backing up $($games.Count -1) servers"
+  Foreach ($game in $games)
   {
-    # Please keep these in alphabetical order, it'll make it easier to update
-    "GAME_$gameName_7DTD" { Backup-Gamefiles "$gameName_7DTD" "$connectionString" "/saves/" }
-    "GAME_$gameName_ARK_SE" { Backup-Gamefiles "$gameName_ARK_SE" "$connectionString" "/ShooterGame/Saved/" }
-    "GAME_$gameName_ICARUS" { Backup-Gamefiles "$gameName_ICARUS" "$connectionString" "/Icarus/Config/" }
-    "GAME_$gameName_VALHEIM" { Backup-Gamefiles "$gameName_VALHEIM" "$connectionString" "/save/" }
-    Default
+    # Only run if there is a valid game name
+    if ($game.Name)
     {
-      Write-Error "The variable name $name is not recognized. If you believe this is in error, please open an issue on our GitHub page: https://github.com/DiceNinjaGaming/gportal-backup-docker"
+      Backup-GameFiles $game
     }
-  } # Switch ($game.Name.Value)
-} # Foreach ($game in $games)
+  } # oreach ($game in $games)
+} # if ($games.Count -gt 0)
 
 Stop-Transcript
