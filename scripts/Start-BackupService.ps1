@@ -9,13 +9,6 @@ Import-Module /scripts/helpers
 
 # ================= FUNCTIONS =================
 
-Function Set-Config
-{
-  $config = Read-Configs
-
-  $env:BACKUPS_MAX_COUNT = $config["BACKUPS_MAX_COUNT"]
-} # Function Set-Config
-
 <#
 .Description
 Parses the game name onto the working folder
@@ -23,15 +16,6 @@ Parses the game name onto the working folder
 Function Get-WorkingFolder([string]$gameName)
 {
   Return (Join-Path $Global:workingRoot $gameName)
-} # function Get-WorkingFolder
-
-<#
-.Description
-Parses the game name onto the working folder
-#>
-Function Get-BackupFolder([string]$gameName)
-{
-  Return (Join-Path $Global:backupRoot $gameName)
 } # function Get-WorkingFolder
 
 <#
@@ -153,8 +137,10 @@ $ErrorActionPreference="SilentlyContinue"
 Stop-Transcript | out-null
 $ErrorActionPreference = "Continue"
 $logFileName = "BackupService_Log_$((Get-Date).tostring("yyyy-MM-dd_HHmmss")).log"
-$logFilePath = Join-Path $Global:logLocation $logFileName
+$logFilePath = Join-Path $Global:logRoot $logFileName
 Start-Transcript -path $logFilePath -append
+
+Set-Config
 
 $games = Get-GamesToBackup
 

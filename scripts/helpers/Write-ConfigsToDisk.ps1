@@ -6,13 +6,12 @@ This is necessary because the information is passed in via environment variables
 BackupService process(es) spawned by cron.
 #>
 
-# Importing classes from the module hasn't worked, so we import them separately
-Get-ChildItem -Path /scripts/classes -Filter *.ps1 | ForEach-Object { . $_.FullName }
-
 Function Write-ConfigsToDisk
 {
     $config = @{}
-    $config["BACKUPS_MAX_COUNT"] = $env:BACKUPS_MAX_COUNT
+    $config.Add("BACKUPS_MAX_COUNT", $env:BACKUPS_MAX_COUNT)
+    $config.Add("LONGTERM_BACKUPS_MAX_COUNT", $env:LONGTERM_BACKUPS_MAX_COUNT)
+    # $config.Add("LOG_FILE_MAX_DAYS", $env:LOG_FILE_MAX_DAYS)
 
     Write-Output "Writing config info to file"
     $config | Export-CSV -Path $global:ConfigFile

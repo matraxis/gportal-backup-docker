@@ -34,9 +34,11 @@ WORKDIR /tmp
 # Set up server defaults
 ENV TZ="Etc/UTC" \
     FILE_UMASK="022" \
-    BACKUPS_MAX_AGE_DAYS=3 \
-    BACKUPS_MAX_COUNT=0 \
-    CRON_EXPRESSION="0 0 * * *"
+    BACKUPS_MAX_COUNT=7 \
+    CRON_EXPRESSION="0 0 * * *" \
+    LONGTERM_CRON_EXPRESSION="0 2 * * 1" \
+    LONGTERM_BACKUPS_MAX_COUNT=0 \
+    LOG_FILE_MAX_DAYS=30
 
 # HEALTHCHECK CMD sv status ddns | grep run || exit 1
 
