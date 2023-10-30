@@ -19,6 +19,13 @@ pwsh -File "/scripts/Setup-Service.ps1" &
 
 # Sleep loop to keep the script running
 while true; do
+
+  # Make sure cron is running
+  if ! pgrep -x "cron" > /dev/null
+  then
+    cron start
+  fi
+  
   sleep 5000 &
   wait $!
 done
