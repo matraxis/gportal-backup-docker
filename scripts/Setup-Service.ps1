@@ -38,3 +38,5 @@ If ($env:ISDEV)
 Write-Output "Cron job is scheduled. You won't see any additional output on this screen until the container exits or restarts cron"
 Write-Output "You can check the backup logs in /app/logs"
 Write-Output "Unfortunately, cron logs are unavailable."
+
+Import-Module .\scripts\GlobalConfigs.ps1 -Force
